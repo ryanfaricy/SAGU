@@ -8,9 +8,9 @@
 
 package com.brianmcmichael.sagu.ui;
 
+import static java.lang.Thread.sleep;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
 
 public class UploadWindowTest {
 
@@ -18,6 +18,6 @@ public class UploadWindowTest {
     @Test(enabled = false)
     public void testUI() throws Exception {
         new UploadWindow();
-        Thread.sleep(10000);
+        sleep(10000);
     }
 }

@@ -15,6 +15,16 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 import static com.brianmcmichael.sagu.SAGU.ACCESS_LABEL;
+import static java.awt.Color.BLUE;
+import static java.awt.Cursor.HAND_CURSOR;
+import static java.awt.Desktop.Action.BROWSE;
+import static java.awt.Desktop.getDesktop;
+import static java.awt.Desktop.isDesktopSupported;
+import java.io.IOException;
+import static java.lang.System.err;
+import static java.lang.System.exit;
+import static java.lang.System.out;
+import java.net.URISyntaxException;
 
 public class JHyperlinkLabel extends JLabel {
 
@@ -24,8 +34,8 @@ public class JHyperlinkLabel extends JLabel {
     public JHyperlinkLabel(String label) {
         super(label);
 
-        setForeground(Color.BLUE.darker());
-        setCursor(new Cursor(Cursor.HAND_CURSOR));
+        setForeground(BLUE.darker());
+        setCursor(new Cursor(HAND_CURSOR));
         addMouseListener(new HyperlinkLabelMouseAdapter());
     }
 
@@ -49,45 +59,51 @@ public class JHyperlinkLabel extends JLabel {
         @Override
         public void mouseClicked(MouseEvent e) {
 
-            if (getText().equals(ACCESS_LABEL)) {
-                OpenURI("https://portal.aws.amazon.com/gp/aws/securityCredentials");
-            } else if (getText().equals("Vault Name: ")) {
-                OpenURI("https://console.aws.amazon.com/glacier/home");
-            } else if (getText().equals("Check for Update")) {
-                OpenURI("http://simpleglacieruploader.brianmcmichael.com/");
+            switch (getText()) {
+                case ACCESS_LABEL:
+                    OpenURI("https://portal.aws.amazon.com/gp/aws/securityCredentials");
+                    break;
+                case "Vault Name: ":
+                    OpenURI("https://console.aws.amazon.com/glacier/home");
+                    break;
+                case "Check for Update":
+                    OpenURI("http://simpleglacieruploader.brianmcmichael.com/");
+                    break;
+                default:
+                    break;
             }
         }
     }
 
     public static void OpenURI(String url) {
 
-        if (!java.awt.Desktop.isDesktopSupported()) {
+        if (!isDesktopSupported()) {
 
-            System.err.println("Desktop is not supported (fatal)");
-            System.exit(1);
+            err.println("Desktop is not supported (fatal)");
+            exit(1);
         }
 
         if (url.length() == 0) {
 
-            System.out.println("Usage: OpenURI [URI [URI ... ]]");
-            System.exit(0);
+            out.println("Usage: OpenURI [URI [URI ... ]]");
+            exit(0);
         }
 
-        java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
+        java.awt.Desktop desktop = getDesktop();
 
-        if (!desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
+        if (!desktop.isSupported(BROWSE)) {
 
-            System.err.println("Desktop doesn't support the browse action (fatal)");
-            System.exit(1);
+            err.println("Desktop doesn't support the browse action (fatal)");
+            exit(1);
         }
 
         try {
 
             java.net.URI uri = new java.net.URI(url);
             desktop.browse(uri);
-        } catch (Exception e) {
+        } catch (IOException | URISyntaxException e) {
 
-            System.err.println(e.getMessage());
+            err.println(e.getMessage());
         }
 
     }

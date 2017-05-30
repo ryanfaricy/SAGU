@@ -13,22 +13,31 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
 import com.amazonaws.services.glacier.model.CreateVaultRequest;
 import com.amazonaws.services.glacier.model.CreateVaultResult;
-import com.brianmcmichael.sagu.Endpoint;
+import static com.brianmcmichael.sagu.Endpoint.getTitleByIndex;
 
 import javax.swing.*;
 import java.awt.*;
+import static java.awt.BorderLayout.CENTER;
+import static java.awt.BorderLayout.NORTH;
+import static java.awt.BorderLayout.SOUTH;
+import static java.awt.Color.WHITE;
+import static java.awt.Toolkit.getDefaultToolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import static javax.swing.JOptionPane.ERROR_MESSAGE;
+import static javax.swing.JOptionPane.INFORMATION_MESSAGE;
+import static javax.swing.JOptionPane.showMessageDialog;
 
-public class AddVaultFrame extends JFrame implements ActionListener, WindowListener {
+public final class AddVaultFrame extends JFrame implements ActionListener, WindowListener {
     
 	private static final long serialVersionUID = 1L;
-	private JTextField jtfAddField;
-    private JButton jbtAdd, jbtBack;
+	private final JTextField jtfAddField;
+    private final JButton jbtAdd;
+    private JButton jbtBack;
 
-    private AmazonGlacierClient addClient;
+    private final AmazonGlacierClient addClient;
 
     //Constructor
     public AddVaultFrame(AmazonGlacierClient client, int region) {
@@ -37,11 +46,11 @@ public class AddVaultFrame extends JFrame implements ActionListener, WindowListe
         int width = 200;
         int height = 170;
 
-        Color wc = Color.WHITE;
+        Color wc = WHITE;
 
         this.addClient = client;
 
-        JLabel label1 = new JLabel("Name of Vault to add to " + Endpoint.getTitleByIndex(region) + ":");
+        JLabel label1 = new JLabel("Name of Vault to add to " + getTitleByIndex(region) + ":");
         jtfAddField = new JTextField(30);
         jbtAdd = new JButton("Add");
         jbtBack = new JButton("Back");
@@ -71,9 +80,9 @@ public class AddVaultFrame extends JFrame implements ActionListener, WindowListe
 
         JPanel p4 = new JPanel();
         p4.setLayout(new BorderLayout());
-        p4.add(p1, BorderLayout.NORTH);
-        p4.add(p2, BorderLayout.CENTER);
-        p4.add(p3, BorderLayout.SOUTH);
+        p4.add(p1, NORTH);
+        p4.add(p2, CENTER);
+        p4.add(p3, SOUTH);
 
         setContentPane(p4);
 
@@ -96,7 +105,7 @@ public class AddVaultFrame extends JFrame implements ActionListener, WindowListe
         int top, left, x, y;
 
         // Get the screen dimension
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension screenSize = getDefaultToolkit().getScreenSize();
 
         // Determine the location for the top left corner of the frame
         x = (screenSize.width - width) / 2;
@@ -142,7 +151,7 @@ public class AddVaultFrame extends JFrame implements ActionListener, WindowListe
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == jbtAdd) {
             if ((jtfAddField.getText().trim().equals(""))) {
-                JOptionPane.showMessageDialog(null, "Enter the name of the vault to add.", "Error", JOptionPane.ERROR_MESSAGE);
+                showMessageDialog(null, "Enter the name of the vault to add.", "Error", ERROR_MESSAGE);
             } else {
 
                 try {
@@ -156,16 +165,16 @@ public class AddVaultFrame extends JFrame implements ActionListener, WindowListe
 
                     CreateVaultResult cvres = addClient.createVault(cvreq);
 
-                    JOptionPane.showMessageDialog(null, "Added vault " + cvres.toString() + " successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    showMessageDialog(null, "Added vault " + cvres.toString() + " successfully.", "Success", INFORMATION_MESSAGE);
                     this.dispose();
 
                 } catch (AmazonServiceException k) {
-                    JOptionPane.showMessageDialog(null, "The server returned an error.", "Error", JOptionPane.ERROR_MESSAGE);
+                    showMessageDialog(null, "The server returned an error.", "Error", ERROR_MESSAGE);
                 } catch (AmazonClientException i) {
-                    JOptionPane.showMessageDialog(null, "Client Error. Check that all fields are correct. Archive not added.", "Error", JOptionPane.ERROR_MESSAGE);
+                    showMessageDialog(null, "Client Error. Check that all fields are correct. Archive not added.", "Error", ERROR_MESSAGE);
 
-                } catch (Exception j) {
-                    JOptionPane.showMessageDialog(null, "Vault not Added. Unspecified Error.", "Error", JOptionPane.ERROR_MESSAGE);
+                } catch (HeadlessException j) {
+                    showMessageDialog(null, "Vault not Added. Unspecified Error.", "Error", ERROR_MESSAGE);
                 }
 
                 jtfAddField.setText("");
@@ -176,7 +185,7 @@ public class AddVaultFrame extends JFrame implements ActionListener, WindowListe
             this.setVisible(false);
             dispose();
         } else {
-            JOptionPane.showMessageDialog(this, "Please choose a valid action.");
+            showMessageDialog(this, "Please choose a valid action.");
         }
 
     }

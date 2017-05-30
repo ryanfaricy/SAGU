@@ -12,10 +12,13 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.FileInputStream;
-import java.nio.file.Files;
+import static java.lang.System.getProperty;
+import static java.nio.file.Files.createDirectory;
+import static java.nio.file.Files.createFile;
+import static java.nio.file.Files.createTempDirectory;
+import static java.nio.file.Files.write;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
+import static java.nio.file.Paths.get;
 import java.util.Properties;
 
 import static java.util.Collections.singleton;
@@ -25,13 +28,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class AppPropertiesTest {
 
-    private String propertiesResourcePath;
-    private String resourceDir;
+    private Path propertiesResourcePath;
+    private Path resourceDir;
 
     @BeforeClass
     public void setUpClass() throws Exception {
-        propertiesResourcePath = AppPropertiesTest.class.getResource("/SAGU.properties").getPath();
-        resourceDir = Paths.get(propertiesResourcePath).getParent().toString();
+        propertiesResourcePath = get(AppPropertiesTest.class.getResource("/SAGU.properties").toURI());
+        resourceDir = get(propertiesResourcePath.toString()).getParent();
     }
 
     @Test
@@ -46,32 +49,32 @@ public class AppPropertiesTest {
 
     @Test
     public void constructorShouldUseWorkingDirIfPropertiesPresentThere() throws Exception {
-        final AppProperties properties = new AppProperties(resourceDir, "");
+        final AppProperties properties = new AppProperties(resourceDir);
         assertThat(properties.getAccessKey(), is("TEST_ACCESS"));
     }
 
     @Test
     public void constructorShouldUseHomeDirIfPropertiesNotInWorkingDir() throws Exception {
-        final Path working = Files.createTempDirectory("working");
-        final Path home = Files.createTempDirectory("home");
-        final Path saguHome = Paths.get(home.toString(), ".sagu");
-        Files.createDirectory(saguHome);
-        final Path propFile = Files.createFile(Paths.get(saguHome.toString(), "SAGU.properties"));
-        Files.write(propFile, singleton("accessKey=TEST"));
+        final Path working = createTempDirectory("working");
+        final Path home = createTempDirectory("home");
+        final Path saguHome = get(home.toString(), ".sagu");
+        createDirectory(saguHome);
+        final Path propFile = createFile(get(saguHome.toString(), "SAGU.properties"));
+        write(propFile, singleton("accessKey=TEST"));
 
-        final AppProperties properties = new AppProperties(working.toString(), saguHome.toString());
+        final AppProperties properties = new AppProperties(working, saguHome);
         assertThat(properties.getAccessKey(), is("TEST"));
     }
 
     @Test
     public void getFilePropertiesPathShouldConcatDirAndFileName() throws Exception {
         final AppProperties properties = new AppProperties(resourceDir);
-        assertThat(properties.getFilePropertiesPath().getAbsolutePath(), is(propertiesResourcePath));
+        assertThat(properties.getFilePropertiesPath().toString(), is(propertiesResourcePath.toString()));
     }
 
     @Test
     public void gettersShouldHaveReturnSensibleDefault() throws Exception {
-        final String tempDir = Files.createTempDirectory("sagu-test-").toString();
+        final Path tempDir = createTempDirectory("sagu-test-");
         final AppProperties emptyProperties = new AppProperties(tempDir);
 
         assertThat(emptyProperties.getLogTypeIndex(), is(0));
@@ -140,7 +143,7 @@ public class AppPropertiesTest {
 
     @Test
     public void savePropertiesShouldWriteThemToFile() throws Exception {
-        final String tempDir = Files.createTempDirectory("sagu-test-").toString();
+        final Path tempDir = createTempDirectory("sagu-test-");
         final AppProperties tempProperties = new AppProperties(tempDir);
         tempProperties.setAccessKey("AC");
         tempProperties.setSecretKey("SE".toCharArray());
@@ -150,7 +153,7 @@ public class AppPropertiesTest {
         tempProperties.saveProperties();
 
         final Properties savedProp = new Properties();
-        savedProp.load(new FileInputStream(tempDir + System.getProperty("file.separator") + "SAGU.properties"));
+        savedProp.load(new FileInputStream(tempDir + getProperty("file.separator") + "SAGU.properties"));
         assertThat(savedProp.getProperty("accessKey"), is("AC"));
         assertThat(savedProp.getProperty("secretKey"), is("SE"));
         assertThat(savedProp.getProperty("vaultKey"), is("VA"));

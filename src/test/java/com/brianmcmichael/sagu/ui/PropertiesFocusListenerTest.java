@@ -10,7 +10,6 @@ package com.brianmcmichael.sagu.ui;
 
 import com.brianmcmichael.sagu.AppProperties;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -21,6 +20,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 public class PropertiesFocusListenerTest {
 
@@ -42,7 +42,7 @@ public class PropertiesFocusListenerTest {
 
     @BeforeMethod
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+        initMocks(this);
         listener = new PropertiesFocusListener(properties, accessField, secretField, vaultField, locationChoice
         );
     }

@@ -20,10 +20,10 @@ import static java.lang.String.format;
  */
 public class LogTypes {
 
-    private JRadioButtonMenuItem logRadio = new JRadioButtonMenuItem(".log");
-    private JRadioButtonMenuItem txtRadio = new JRadioButtonMenuItem(".txt");
-    private JRadioButtonMenuItem csvRadio = new JRadioButtonMenuItem(".csv");
-    private JRadioButtonMenuItem yamlRadio = new JRadioButtonMenuItem(".yaml");
+    private final JRadioButtonMenuItem logRadio = new JRadioButtonMenuItem(".log");
+    private final JRadioButtonMenuItem txtRadio = new JRadioButtonMenuItem(".txt");
+    private final JRadioButtonMenuItem csvRadio = new JRadioButtonMenuItem(".csv");
+    private final JRadioButtonMenuItem yamlRadio = new JRadioButtonMenuItem(".yaml");
 
     /**
      * Initializes log type menu items and selects one by index.
@@ -79,7 +79,7 @@ public class LogTypes {
      *
      * @param index the index of the log type to be selected
      */
-    void selectLogType(int index) {
+    final void selectLogType(int index) {
         switch (index) {
             case 0:
                 logRadio.setSelected(true);

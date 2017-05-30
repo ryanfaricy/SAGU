@@ -8,15 +8,18 @@
 
 package com.brianmcmichael.sagu;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
-import com.amazonaws.services.glacier.TreeHashGenerator;
+import static com.amazonaws.services.glacier.TreeHashGenerator.calculateTreeHash;
 import com.amazonaws.services.glacier.model.DescribeVaultOutput;
 import com.amazonaws.services.glacier.model.ListVaultsRequest;
 import com.amazonaws.services.glacier.model.ListVaultsResult;
 import com.amazonaws.services.glacier.transfer.ArchiveTransferManager;
 import com.amazonaws.services.glacier.transfer.UploadResult;
+import static com.brianmcmichael.sagu.Endpoint.getByIndex;
+import static com.brianmcmichael.sagu.Endpoint.populateComboBox;
 import com.brianmcmichael.sagu.ui.*;
 
 import javax.swing.*;
@@ -28,8 +31,29 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import static com.brianmcmichael.sagu.LogWriter.getLogFile;
+import static com.brianmcmichael.sagu.SAGUUtils.concatFileArrays;
+import static com.brianmcmichael.sagu.SAGUUtils.loadVersionNumber;
+import static com.brianmcmichael.sagu.SAGUUtils.removeNullFiles;
+import static com.brianmcmichael.sagu.SAGUUtils.pathToDescription;
+import static com.brianmcmichael.sagu.ui.JHyperlinkLabel.OpenURI;
+import static java.awt.BorderLayout.CENTER;
+import static java.awt.BorderLayout.NORTH;
+import static java.awt.BorderLayout.SOUTH;
 import static java.awt.Color.WHITE;
+import static java.awt.FileDialog.SAVE;
+import static java.awt.Font.BOLD;
+import static java.awt.Toolkit.getDefaultToolkit;
 import static java.lang.String.format;
+import static java.lang.String.valueOf;
+import static java.lang.System.exit;
+import static java.lang.System.getProperty;
+import static java.lang.Thread.sleep;
+import static java.nio.file.Paths.get;
+import static javax.swing.BorderFactory.createTitledBorder;
+import static javax.swing.JFileChooser.APPROVE_OPTION;
+import static javax.swing.JOptionPane.ERROR_MESSAGE;
+import static javax.swing.JOptionPane.INFORMATION_MESSAGE;
+import static javax.swing.JOptionPane.showMessageDialog;
 
 public class SAGU extends JFrame implements ActionListener {
 
@@ -74,137 +98,136 @@ public class SAGU extends JFrame implements ActionListener {
     private AmazonGlacierClient client;
 
     // Right mouse click context listener
-    private ContextMenuMouseListener rmb = new ContextMenuMouseListener();
+    final ContextMenuMouseListener rmb = new ContextMenuMouseListener();
 
     // File array for multiupload
     private File[] multiFiles;
 
-    private Dimension buttonDimension = new Dimension(180, 27);
+    final Dimension buttonDimension = new Dimension(180, 27);
 
     // Set Graphics
-    private URL xIconUrl = getClass().getResource("/smallx.png");
-    private ImageIcon xIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(xIconUrl));
-    private URL downIconUrl = getClass().getResource("/arrowDown.png");
-    private ImageIcon downIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(downIconUrl));
-    private URL exitIconUrl = getClass().getResource("/powerButton.png");
-    private ImageIcon exitIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(exitIconUrl));
-    private URL logIconUrl = getClass().getResource("/logKey.png");
-    private ImageIcon logIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(logIconUrl));
-    private URL toolsIconUrl = getClass().getResource("/tools.png");
-    private ImageIcon toolsIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(toolsIconUrl));
-    private URL saveIconUrl = getClass().getResource("/floppy.png");
-    private ImageIcon saveIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(saveIconUrl));
-    private URL logViewIconUrl = getClass().getResource("/logView.png");
-    private ImageIcon logViewIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(logViewIconUrl));
-    private URL updateIconUrl = getClass().getResource("/paper.png");
-    private ImageIcon updateIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(updateIconUrl));
-    private URL userUrl = getClass().getResource("/littleguy.png");
-    private ImageIcon userIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(userUrl));
-    private URL logoUrl = getClass().getResource("/SAGU.png");
-    private JLabel logoLabel = new JLabel(new ImageIcon(Toolkit.getDefaultToolkit().getImage(logoUrl)));
+    final URL xIconUrl = getClass().getResource("/smallx.png");
+    final ImageIcon xIcon = new ImageIcon(getDefaultToolkit().getImage(xIconUrl));
+    final URL downIconUrl = getClass().getResource("/arrowDown.png");
+    final ImageIcon downIcon = new ImageIcon(getDefaultToolkit().getImage(downIconUrl));
+    final URL exitIconUrl = getClass().getResource("/powerButton.png");
+    final ImageIcon exitIcon = new ImageIcon(getDefaultToolkit().getImage(exitIconUrl));
+    final URL logIconUrl = getClass().getResource("/logKey.png");
+    final ImageIcon logIcon = new ImageIcon(getDefaultToolkit().getImage(logIconUrl));
+    final URL toolsIconUrl = getClass().getResource("/tools.png");
+    final ImageIcon toolsIcon = new ImageIcon(getDefaultToolkit().getImage(toolsIconUrl));
+    final URL saveIconUrl = getClass().getResource("/floppy.png");
+    final ImageIcon saveIcon = new ImageIcon(getDefaultToolkit().getImage(saveIconUrl));
+    final URL logViewIconUrl = getClass().getResource("/logView.png");
+    final ImageIcon logViewIcon = new ImageIcon(getDefaultToolkit().getImage(logViewIconUrl));
+    final URL updateIconUrl = getClass().getResource("/paper.png");
+    final ImageIcon updateIcon = new ImageIcon(getDefaultToolkit().getImage(updateIconUrl));
+    final URL userUrl = getClass().getResource("/littleguy.png");
+    final ImageIcon userIcon = new ImageIcon(getDefaultToolkit().getImage(userUrl));
+    final URL logoUrl = getClass().getResource("/SAGU.png");
+    final JLabel logoLabel = new JLabel(new ImageIcon(getDefaultToolkit().getImage(logoUrl)));
 
-    private JPanel mainPanel = new JPanel();
+    final JPanel mainPanel = new JPanel();
 
-    private JPanel o1 = new JPanel();
+    final JPanel o1 = new JPanel();
 
-    private JPanel p1 = new JPanel();
-    private JPanel p2 = new JPanel();
-    private JPanel p3 = new JPanel();
+    final JPanel p1 = new JPanel();
+    final JPanel p2 = new JPanel();
+    final JPanel p3 = new JPanel();
 
-    private JMenuBar menuBar = new JMenuBar();
-    private JMenu fileMenu = new JMenu("File");
-    private JMenuItem saveFileMnu = new JMenuItem("Export Log", saveIcon);
-    private JMenuItem exitApplicationMnu = new JMenuItem("Exit", exitIcon);
-    private JMenu retrieveMenu = new JMenu("Retrieve");
-    private JMenuItem getAWSCredentialsLinkMnu = new JMenuItem(AWS_SITE_STRING, userIcon);
-    private JMenuItem downloadFileMnu = new JMenuItem(DOWNLOAD_STRING, downIcon);
-    private JMenu viewMenu = new JMenu("View");
-    private JMenuItem viewLog = new JMenuItem("View Log", logViewIcon);
-    private JCheckBoxMenuItem logCheckMenuItem = new JCheckBoxMenuItem("Logging On/Off", logIcon);
-    private JMenu deleteMenu = new JMenu("Delete");
-    private JMenuItem deleteArchiveMnu = new JMenuItem("Delete Archive", xIcon);
-    private JMenu helpMenu = new JMenu("Help");
-    private JMenuItem updateMnu = new JMenuItem(UPDATE_STRING, updateIcon);
-    private JMenuItem aboutMnu = new JMenuItem("About", toolsIcon);
+    final JMenuBar menuBar = new JMenuBar();
+    final JMenu fileMenu = new JMenu("File");
+    final JMenuItem saveFileMnu = new JMenuItem("Export Log", saveIcon);
+    final JMenuItem exitApplicationMnu = new JMenuItem("Exit", exitIcon);
+    final JMenu retrieveMenu = new JMenu("Retrieve");
+    final JMenuItem getAWSCredentialsLinkMnu = new JMenuItem(AWS_SITE_STRING, userIcon);
+    final JMenuItem downloadFileMnu = new JMenuItem(DOWNLOAD_STRING, downIcon);
+    final JMenu viewMenu = new JMenu("View");
+    final JMenuItem viewLog = new JMenuItem("View Log", logViewIcon);
+    final JCheckBoxMenuItem logCheckMenuItem = new JCheckBoxMenuItem("Logging On/Off", logIcon);
+    final JMenu deleteMenu = new JMenu("Delete");
+    final JMenuItem deleteArchiveMnu = new JMenuItem("Delete Archive", xIcon);
+    final JMenu helpMenu = new JMenu("Help");
+    final JMenuItem updateMnu = new JMenuItem(UPDATE_STRING, updateIcon);
+    final JMenuItem aboutMnu = new JMenuItem("About", toolsIcon);
 
-    private JPanel titlePanel = new JPanel();
-    private JLabel titleLabel = new JLabel(TITLE + " " + versionNumber);
+    final JPanel titlePanel = new JPanel();
+    final JLabel titleLabel = new JLabel(TITLE + " " + versionNumber);
 
-    private JPanel credentialsPanel = new JPanel(new GridLayout(4, 1, 10, 10));
-    private JHyperlinkLabel accessLabel = new JHyperlinkLabel(ACCESS_LABEL); // v0.3
+    final JPanel credentialsPanel = new JPanel(new GridLayout(4, 1, 10, 10));
+    final JHyperlinkLabel accessLabel = new JHyperlinkLabel(ACCESS_LABEL); // v0.3
     JTextField accessField = new JTextField(21);
-    private JLabel secretLabel = new JLabel("Secret Key: ");
+    final JLabel secretLabel = new JLabel("Secret Key: ");
     JPasswordField secretField = new JPasswordField(41);
 
-    private JPanel locationPanel = new JPanel();
-    private JComboBox<String> locationChoice = new JComboBox<String>();
-    private JButton loginButton = new JButton("Refresh Vaults");
+    final JPanel locationPanel = new JPanel();
+    final JComboBox<String> locationChoice = new JComboBox<>();
+    final JButton loginButton = new JButton("Refresh Vaults");
 
-    private JPanel vaultPanel = new JPanel();
-    private JComboBox<String> vaultSelector = new JComboBox<String>();
+    final JPanel vaultPanel = new JPanel();
+    final JComboBox<String> vaultSelector = new JComboBox<>();
     JTextField vaultField = new JTextField(15);
-    private JButton newVaultButton = new JButton("Create Vault");
+    final JButton newVaultButton = new JButton("Create Vault");
 
-    private JPanel logoPanel = new JPanel();
+    final JPanel logoPanel = new JPanel();
 
-    private JPanel logPanel = new JPanel();
-    private JButton logButton = new JButton("View Log");
-    private JButton downloadRequestButton = new JButton(DOWNLOAD_STRING);
-    private JButton inventoryRequestButton = new JButton(INVENTORY_REQUEST_STRING);
-    private JButton checkUpdateButton = new JButton(UPDATE_STRING);
+    final JPanel logPanel = new JPanel();
+    final JButton logButton = new JButton("View Log");
+    final JButton downloadRequestButton = new JButton(DOWNLOAD_STRING);
+    final JButton inventoryRequestButton = new JButton(INVENTORY_REQUEST_STRING);
+    final JButton checkUpdateButton = new JButton(UPDATE_STRING);
 
-    private JPanel selectionsPanel = new JPanel();
-    private JButton selectFileButton = new JButton("Select File");
-    private JButton clearButton = new JButton("Clear");
+    final JPanel selectionsPanel = new JPanel();
+    final JButton selectFileButton = new JButton("Select File");
+    final JButton clearButton = new JButton("Clear");
 
-    private JPanel fileDropPanel = new JPanel();
+    final JPanel fileDropPanel = new JPanel();
     private JTextArea ddText = new JTextArea();
-    private JScrollPane ddScroll = new JScrollPane(ddText);
+    final JScrollPane ddScroll = new JScrollPane(ddText);
     private JButton uploadButton = new JButton("Upload");
 
-    private JPanel copyrightPanel = new JPanel();
+    final JPanel copyrightPanel = new JPanel();
 
-    private JFileChooser fc = new JFileChooser();
+    final JFileChooser fc = new JFileChooser();
 
     private LogTypes logTypes;
 
     {
-        new FileDrop(ddText, files -> {
-            ddText.setEditable(false);
-            {
-                for (int i = 0; i < files.length; i++) {
-                    if (files[i].isDirectory()) {
-                        try {
-                            ddText.append("Unable to upload: " + files[i].getCanonicalPath() + "\n");
-                        } catch (IOException e) {
+            FileDrop fileDrop = new FileDrop(ddText, files -> {
+                ddText.setEditable(false);
+                {
+                    for (int i = 0; i < files.length; i++) {
+                        if (files[i].isDirectory()) {
+                            try {
+                                ddText.append("Unable to upload: " + files[i].getCanonicalPath() + "\n");
+                            } catch (IOException e) {
+                            }
+                            showMessageDialog(null,
+                                    NO_DIRECTORIES_ERROR, "Error", ERROR_MESSAGE);
+                            files[i] = null;
+                        } else {
+                            try {
+                                ddText.append(files[i].getCanonicalPath() + "\n");
+                            } catch (IOException e) {
+                            }
                         }
-                        JOptionPane.showMessageDialog(null,
-                                NO_DIRECTORIES_ERROR, "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                        files[i] = null;
-                    } else {
-                        try {
-                            ddText.append(files[i].getCanonicalPath() + "\n");
-                        } catch (IOException e) {
-                        }
-                    }
-                } // end for: through each dropped file
-            }
-            files = SAGUUtils.removeNullFiles(files);
-            if (multiFiles != null) {
-                multiFiles = SAGUUtils.concatFileArrays(multiFiles, files);
-            } else {
-                multiFiles = files;
-            }
-
-            if (multiFiles.length == 0) {
-                uploadButton.setText("Select File(s)");
-            } else if (multiFiles.length == 1) {
-                uploadButton.setText("Upload File");
-            } else if (multiFiles.length > 1) {
-                uploadButton.setText("Upload Files");
-            }
-        });
+                    } // end for: through each dropped file
+                }
+                files = removeNullFiles(files);
+                if (multiFiles != null) {
+                    multiFiles = concatFileArrays(multiFiles, files);
+                } else {
+                    multiFiles = files;
+                }
+                
+                if (multiFiles.length == 0) {
+                    uploadButton.setText("Select File(s)");
+                } else if (multiFiles.length == 1) {
+                    uploadButton.setText("Upload File");
+                } else if (multiFiles.length > 1) {
+                    uploadButton.setText("Upload Files");
+                }
+            });
     }
 
     private SAGU() {
@@ -213,7 +236,7 @@ public class SAGU extends JFrame implements ActionListener {
     }
 
     private SAGU(final String propertiesDir) {
-        appProperties = new AppProperties(propertiesDir);
+        appProperties = new AppProperties(get(propertiesDir));
         initializeUI();
     }
 
@@ -229,7 +252,7 @@ public class SAGU extends JFrame implements ActionListener {
 
         titlePanel.setBackground(WHITE);
         titlePanel.add(titleLabel);
-        final Font f3 = new Font("Helvetica", Font.BOLD, 20);
+        final Font f3 = new Font("Helvetica", BOLD, 20);
         titleLabel.setFont(f3);
 
         viewMenu.setBackground(WHITE);
@@ -250,7 +273,7 @@ public class SAGU extends JFrame implements ActionListener {
         logTypes.addItemListener(logTypeListener);
 
         credentialsPanel.setBackground(WHITE);
-        credentialsPanel.setBorder(BorderFactory.createTitledBorder("AWS Credentials"));
+        credentialsPanel.setBorder(createTitledBorder("AWS Credentials"));
         credentialsPanel.add(accessLabel);
         credentialsPanel.add(accessField);
         accessField.addMouseListener(rmb);
@@ -265,11 +288,11 @@ public class SAGU extends JFrame implements ActionListener {
         secretField.addFocusListener(propertiesFocusListener);
 
         locationPanel.setBackground(WHITE);
-        locationPanel.setBorder(BorderFactory.createTitledBorder("Server Location"));
+        locationPanel.setBorder(createTitledBorder("Server Location"));
         locationPanel.add(locationChoice);
         locationChoice.setPreferredSize(buttonDimension);
         locationChoice.setBackground(WHITE);
-        Endpoint.populateComboBox(locationChoice);
+        populateComboBox(locationChoice);
         locationChoice.setSelectedIndex(appProperties.getLocationIndex());
         locationChoice.addActionListener(this);
         locationChoice.addFocusListener(propertiesFocusListener);
@@ -279,7 +302,7 @@ public class SAGU extends JFrame implements ActionListener {
         loginButton.setPreferredSize(buttonDimension);
 
         vaultPanel.setBackground(WHITE);
-        vaultPanel.setBorder(BorderFactory.createTitledBorder("Vault Selection"));
+        vaultPanel.setBorder(createTitledBorder("Vault Selection"));
         vaultPanel.add(vaultSelector);
         vaultSelector.setBackground(WHITE);
         vaultSelector.addActionListener(this);
@@ -298,7 +321,7 @@ public class SAGU extends JFrame implements ActionListener {
         logoPanel.add(logoLabel);
 
         logPanel.setBackground(WHITE);
-        logPanel.setBorder(BorderFactory.createTitledBorder("Options"));
+        logPanel.setBorder(createTitledBorder("Options"));
         logPanel.add(logButton);
         logButton.setBackground(WHITE);
         logButton.addActionListener(this);
@@ -328,8 +351,8 @@ public class SAGU extends JFrame implements ActionListener {
 
         fileDropPanel.setBackground(WHITE);
         fileDropPanel.setLayout(new BorderLayout());
-        fileDropPanel.setBorder(BorderFactory.createTitledBorder("Drag and Drop Files"));
-        fileDropPanel.add(ddScroll, BorderLayout.CENTER);
+        fileDropPanel.setBorder(createTitledBorder("Drag and Drop Files"));
+        fileDropPanel.add(ddScroll, CENTER);
         ddText.setEditable(false);
         ddScroll.setSize(180, 300);
 
@@ -339,26 +362,26 @@ public class SAGU extends JFrame implements ActionListener {
         p1.add(vaultPanel);
 
         p2.setBackground(WHITE);
-        p2.add(logoPanel, BorderLayout.NORTH);
-        p2.add(logPanel, BorderLayout.CENTER);
+        p2.add(logoPanel, NORTH);
+        p2.add(logPanel, CENTER);
 
         p3.setBackground(WHITE);
-        p3.add(selectionsPanel, BorderLayout.NORTH);
-        p3.add(fileDropPanel, BorderLayout.CENTER);
-        p3.add(uploadButton, BorderLayout.SOUTH);
+        p3.add(selectionsPanel, NORTH);
+        p3.add(fileDropPanel, CENTER);
+        p3.add(uploadButton, SOUTH);
         uploadButton.setBackground(WHITE);
         uploadButton.addActionListener(this);
-        p3.setBorder(BorderFactory.createTitledBorder("Uploads"));
+        p3.setBorder(createTitledBorder("Uploads"));
 
         o1.setBackground(WHITE);
         o1.add(p1);
         o1.add(p2);
         o1.add(p3);
 
-        mainPanel.add(o1, BorderLayout.CENTER);
+        mainPanel.add(o1, CENTER);
         mainPanel.setBackground(WHITE);
-        mainPanel.add(menuBar, BorderLayout.NORTH);
-        mainPanel.add(copyrightPanel, BorderLayout.SOUTH);
+        mainPanel.add(menuBar, NORTH);
+        mainPanel.add(copyrightPanel, SOUTH);
 
         menuBar.setBackground(WHITE);
         menuBar.add(fileMenu);
@@ -392,16 +415,17 @@ public class SAGU extends JFrame implements ActionListener {
         aboutMnu.setBackground(WHITE);
         aboutMnu.addActionListener(this);
 
-        add(mainPanel, BorderLayout.CENTER);
+        add(mainPanel, CENTER);
         pack();
 
         addWindowListener(new WindowAdapter() {
+            @Override
             public void windowClosing(WindowEvent e) {
-                System.exit(0);
+                exit(0);
             }
         });
 
-        versionNumber = SAGUUtils.loadVersionNumber();
+        versionNumber = loadVersionNumber();
 
         pack();
         if (width < getWidth()) { // prevent setting width too small
@@ -427,22 +451,21 @@ public class SAGU extends JFrame implements ActionListener {
                 secretField.requestFocusInWindow();
             }
 
-            JOptionPane.showMessageDialog(null,
-                    "You must enter your AWS credentials.", "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            showMessageDialog(null,
+                    "You must enter your AWS credentials.", "Error", ERROR_MESSAGE);
             passBool = false;
         } else if ((getAccessKey().length() != 20) || (getSecretKey().length() != 40)) {
             if (getAccessKey().length() != 20) {
                 accessField.requestFocusInWindow();
-                JOptionPane.showMessageDialog(null,
+                showMessageDialog(null,
                         "Your AWS Access Key does not appear to be valid.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                        "Error", ERROR_MESSAGE);
                 passBool = false;
             } else if (getSecretKey().length() != 40) {
                 secretField.requestFocusInWindow();
-                JOptionPane.showMessageDialog(null,
+                showMessageDialog(null,
                         "Your AWS Secret Key does not appear to be valid.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                        "Error", ERROR_MESSAGE);
                 passBool = false;
             }
         } else {
@@ -462,22 +485,21 @@ public class SAGU extends JFrame implements ActionListener {
             } else if ((getVaultName().equals(""))) {
                 vaultField.requestFocusInWindow();
             }
-            JOptionPane.showMessageDialog(null,
-                    "You must complete all fields.", "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            showMessageDialog(null,
+                    "You must complete all fields.", "Error", ERROR_MESSAGE);
             passBool = false;
         } else if ((getAccessKey().length() != 20) || (getSecretKey().length() != 40)) {
             if (getAccessKey().length() != 20) {
                 accessField.requestFocusInWindow();
-                JOptionPane.showMessageDialog(null,
+                showMessageDialog(null,
                         "Your AWS Access Key does not appear to be valid.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                        "Error", ERROR_MESSAGE);
                 passBool = false;
             } else if (getSecretKey().length() != 40) {
                 secretField.requestFocusInWindow();
-                JOptionPane.showMessageDialog(null,
+                showMessageDialog(null,
                         "Your AWS Secret Key does not appear to be valid.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                        "Error", ERROR_MESSAGE);
                 passBool = false;
             }
         } else {
@@ -490,8 +512,8 @@ public class SAGU extends JFrame implements ActionListener {
         boolean passBool;
 
         if (multiFiles == null) {
-            JOptionPane.showMessageDialog(null, "Please select a file.",
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            showMessageDialog(null, "Please select a file.",
+                    "Error", ERROR_MESSAGE);
             passBool = false;
         } else {
             passBool = true;
@@ -508,7 +530,7 @@ public class SAGU extends JFrame implements ActionListener {
     }
 
     String getSecretKey() {
-        return String.valueOf(secretField.getPassword()).trim();
+        return valueOf(secretField.getPassword()).trim();
     }
 
     private int getServerRegion() {
@@ -535,13 +557,13 @@ public class SAGU extends JFrame implements ActionListener {
                         marker).withLimit("1000");
 
                 ListVaultsResult lvr = newVaultCheckClient.listVaults(lv);
-                ArrayList<DescribeVaultOutput> vList = new ArrayList<DescribeVaultOutput>(
+                ArrayList<DescribeVaultOutput> vList = new ArrayList<>(
                         lvr.getVaultList());
                 marker = lvr.getMarker();
 
-                for (DescribeVaultOutput vault : vList) {
+                vList.forEach((vault) -> {
                     vaultSelector.addItem(vault.getVaultName());
-                }
+                });
 
             } while (marker != null);
         }
@@ -551,7 +573,7 @@ public class SAGU extends JFrame implements ActionListener {
         int top, left, x, y;
 
         // Get the screen dimension
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension screenSize = getDefaultToolkit().getScreenSize();
 
         // Determine the location for the top left corner of the frame
         x = (screenSize.width - width) / 2;
@@ -565,7 +587,7 @@ public class SAGU extends JFrame implements ActionListener {
     private AmazonGlacierClient makeClient(String accessorString, String secretiveString, int regionIndex) {
         BasicAWSCredentials credentials = new BasicAWSCredentials(accessorString, secretiveString);
         client = new AmazonGlacierClient(credentials);
-        client.setEndpoint(Endpoint.getByIndex(regionIndex).getGlacierEndpoint());
+        client.setEndpoint(getByIndex(regionIndex).getGlacierEndpoint());
         return client;
     }
 
@@ -595,18 +617,18 @@ public class SAGU extends JFrame implements ActionListener {
             repopulateVaults(accessString, secretString);
         }
         if (e.getSource() == exitApplicationMnu) {
-            System.exit(0);
+            exit(0);
         }
         if (e.getSource() == updateMnu || e.getSource() == checkUpdateButton) {
-            JHyperlinkLabel.OpenURI(URL_STRING);
+            OpenURI(URL_STRING);
         }
         if (e.getSource() == saveFileMnu) {
-            FileDialog fd = new FileDialog(new Frame(), "Save...", FileDialog.SAVE);
+            FileDialog fd = new FileDialog(new Frame(), "Save...", SAVE);
             fd.setFile("Glacier.txt");
-            fd.setDirectory(appProperties.getDir());
+            fd.setDirectory(appProperties.getDir().toString());
             fd.setLocation(50, 50);
             fd.setVisible(true);
-            String filePath = "" + fd.getDirectory() + System.getProperty("file.separator") + fd.getFile();
+            String filePath = "" + fd.getDirectory() + getProperty("file.separator") + fd.getFile();
 
             File outFile = new File(filePath);
 
@@ -653,18 +675,15 @@ public class SAGU extends JFrame implements ActionListener {
                             moreLines = false;
                             br.close();
                             saveFile.close();
-                            JOptionPane.showMessageDialog(
-                                    null,
+                            showMessageDialog(null,
                                     "Successfully exported " + count
                                             + " archive records to "
-                                            + outFile.toString(), "Export",
-                                    JOptionPane.INFORMATION_MESSAGE);
+                                            + outFile.toString(), "Export", INFORMATION_MESSAGE);
                         }
                     }
                 } catch (FileNotFoundException e1) {
-                    JOptionPane.showMessageDialog(null,
-                            "Unable to locate Glacier.log", "Error",
-                            JOptionPane.ERROR_MESSAGE);
+                    showMessageDialog(null,
+                            "Unable to locate Glacier.log", "Error", ERROR_MESSAGE);
                     e1.printStackTrace();
                 } catch (IOException e1) {
                     e1.printStackTrace();
@@ -675,11 +694,10 @@ public class SAGU extends JFrame implements ActionListener {
         if (e.getSource() == viewLog || e.getSource() == logButton) {
             File f = getLogFile(logTypes.getSelectedIndex(), appProperties);
             if (f.exists()) {
-                JHyperlinkLabel.OpenURI("" + f.toURI());
+                OpenURI("" + f.toURI());
             } else {
-                JOptionPane.showMessageDialog(null,
-                        "Log file " + f.getName() + " does not exist.", "Error",
-                        JOptionPane.ERROR_MESSAGE);
+                showMessageDialog(null,
+                        "Log file " + f.getName() + " does not exist.", "Error", ERROR_MESSAGE);
             }
         }
         if (e.getSource() == deleteArchiveMnu) {
@@ -707,8 +725,7 @@ public class SAGU extends JFrame implements ActionListener {
         }
 
         if (e.getSource() == aboutMnu) {
-            JOptionPane.showMessageDialog(null, format(ABOUT_PATTERN, versionNumber), "About",
-                    JOptionPane.INFORMATION_MESSAGE);
+            showMessageDialog(null, format(ABOUT_PATTERN, versionNumber), "About", INFORMATION_MESSAGE);
         }
 
         if (e.getSource() == clearButton) {
@@ -724,7 +741,7 @@ public class SAGU extends JFrame implements ActionListener {
         if (e.getSource() == selectFileButton) {
             int returnVal = fc.showOpenDialog(SAGU.this);
 
-            if (returnVal == JFileChooser.APPROVE_OPTION) {
+            if (returnVal == APPROVE_OPTION) {
                 if (fc.getSelectedFile().isFile()) {
                     File[] thisFile = new File[1];
                     thisFile[0] = fc.getSelectedFile();
@@ -733,12 +750,12 @@ public class SAGU extends JFrame implements ActionListener {
                     } catch (java.io.IOException f) {
                     }
                     if (multiFiles != null) {
-                        multiFiles = SAGUUtils.concatFileArrays(multiFiles, thisFile);
+                        multiFiles = concatFileArrays(multiFiles, thisFile);
                     } else {
                         multiFiles = thisFile;
                     }
                 } else {
-                    JOptionPane.showMessageDialog(null, NO_DIRECTORIES_ERROR, "Error", JOptionPane.ERROR_MESSAGE);
+                    showMessageDialog(null, NO_DIRECTORIES_ERROR, "Error", ERROR_MESSAGE);
                 }
             }
 
@@ -771,12 +788,12 @@ public class SAGU extends JFrame implements ActionListener {
 
                         if (uploadFileBatch.length > 0) {
 
-                            ArrayList<String> uploadList = new ArrayList<String>();
+                            ArrayList<String> uploadList = new ArrayList<>();
 
                             for (int i = 0; i < uploadFileBatch.length; i++) {
 
                                 try {
-                                    Thread.sleep(100L); // why?
+                                    sleep(100L); // why?
                                 } catch (InterruptedException e1) {
                                     e1.printStackTrace();
                                 }
@@ -787,11 +804,11 @@ public class SAGU extends JFrame implements ActionListener {
 
                                 BasicAWSCredentials credentials = new BasicAWSCredentials(accessString, secretString);
                                 client = new AmazonGlacierClient(credentials, config);
-                                final Endpoint endpoint = Endpoint.getByIndex(locInt);
+                                final Endpoint endpoint = getByIndex(locInt);
                                 client.setEndpoint(endpoint.getGlacierEndpoint());
                                 String locationUpped = endpoint.name();
                                 String thisFile = uploadFileBatch[i].getCanonicalPath();
-                                final String description = SAGUUtils.pathToDescription(thisFile);
+                                final String description = pathToDescription(thisFile);
 
                                 try {
 
@@ -818,7 +835,7 @@ public class SAGU extends JFrame implements ActionListener {
 
                                     // write to file
                                     if (logCheckMenuItem.isSelected()) {
-                                        String treeHash = TreeHashGenerator.calculateTreeHash(uploadFileBatch[i]);
+                                        String treeHash = calculateTreeHash(uploadFileBatch[i]);
 
                                         try {
                                             logWriter = new LogWriter(appProperties);
@@ -835,41 +852,37 @@ public class SAGU extends JFrame implements ActionListener {
                                                         + ". Bytes: " + fileLength
                                                         + ". ArchiveID Logged.\n");
                                             } catch (IOException c) {
-                                                JOptionPane.showMessageDialog(null,
+                                                showMessageDialog(null,
                                                         LOG_WRITE_ERROR,
-                                                        "IO Error",
-                                                        JOptionPane.ERROR_MESSAGE);
+                                                        "IO Error", ERROR_MESSAGE);
                                                 uw.dispose();
-                                                System.exit(1);
+                                                exit(1);
                                             }
 
                                         } catch (IOException ex) {
-                                            JOptionPane.showMessageDialog(null,
+                                            showMessageDialog(null,
                                                     LOG_CREATION_ERROR,
-                                                    "IO Error",
-                                                    JOptionPane.ERROR_MESSAGE);
+                                                    "IO Error", ERROR_MESSAGE);
                                             uw.dispose();
-                                            System.exit(1);
+                                            exit(1);
                                         }
                                     } else {
-                                        JOptionPane.showMessageDialog(
-                                                null,
+                                        showMessageDialog(null,
                                                 "Upload Complete!\nArchive ID: "
                                                         + result.getArchiveId()
                                                         + "\nIt may take some time for Amazon to update the inventory.",
-                                                "Uploaded",
-                                                JOptionPane.INFORMATION_MESSAGE);
+                                                "Uploaded", INFORMATION_MESSAGE);
                                         multiFiles = null;
                                         uw.dispose();
                                     }
 
                                     clearFile();
 
-                                } catch (Exception h) {
+                                } catch (AmazonClientException | HeadlessException h) {
                                     if (logCheckMenuItem.isSelected()) {
                                         writeToErrorLog(h, thisFile);
                                     }
-                                    JOptionPane.showMessageDialog(null, "" + h, "Error", JOptionPane.ERROR_MESSAGE);
+                                    showMessageDialog(null, "" + h, "Error", ERROR_MESSAGE);
                                     uw.dispose();
 
                                 }
@@ -890,16 +903,14 @@ public class SAGU extends JFrame implements ActionListener {
                             // Put the JTextArea in a JScollPane and present that in the JOptionPane
                             JScrollPane uploadCompleteScroll = new JScrollPane(uploadCompleteMsg);
                             uploadCompleteScroll.setPreferredSize(new Dimension(500, 400));
-                            JOptionPane.showMessageDialog(null,
-                                    uploadCompleteScroll, "Uploaded",
-                                    JOptionPane.INFORMATION_MESSAGE);
+                            showMessageDialog(null,
+                                    uploadCompleteScroll, "Uploaded", INFORMATION_MESSAGE);
                             // Close the JProgressBar
                             multiFiles = null;
                             clearFile();
                         } else {
-                            JOptionPane.showMessageDialog(null,
-                                    "This wasn't supposed to happen.", "Bug!",
-                                    JOptionPane.ERROR_MESSAGE);
+                            showMessageDialog(null,
+                                    "This wasn't supposed to happen.", "Bug!", ERROR_MESSAGE);
                             uw.dispose();
 
                         }
@@ -913,24 +924,22 @@ public class SAGU extends JFrame implements ActionListener {
                         Writer errorOutputLog = null;
                         try {
                             errorOutputLog = new BufferedWriter(new FileWriter(getLogFile(4, appProperties), true));
-                        } catch (Exception badLogCreate) {
-                            JOptionPane.showMessageDialog(null,
-                                    LOG_CREATION_ERROR, "IO Error",
-                                    JOptionPane.ERROR_MESSAGE);
-                            System.exit(1);
+                        } catch (IOException badLogCreate) {
+                            showMessageDialog(null,
+                                    LOG_CREATION_ERROR, "IO Error", ERROR_MESSAGE);
+                            exit(1);
                         }
                         try {
                             Date d = new Date();
 
-                            errorOutputLog.write(System.getProperty("line.separator"));
+                            errorOutputLog.write(getProperty("line.separator"));
                             errorOutputLog.write("" + d.toString() + ": \"" + thisFile + "\" *ERROR* " + thisError);
-                            errorOutputLog.write(System.getProperty("line.separator"));
+                            errorOutputLog.write(getProperty("line.separator"));
 
-                        } catch (Exception badLogWrite) {
-                            JOptionPane.showMessageDialog(null,
-                                    LOG_WRITE_ERROR, "IO Error",
-                                    JOptionPane.ERROR_MESSAGE);
-                            System.exit(1);
+                        } catch (IOException badLogWrite) {
+                            showMessageDialog(null,
+                                    LOG_WRITE_ERROR, "IO Error", ERROR_MESSAGE);
+                            exit(1);
                         }
                     }
                 };

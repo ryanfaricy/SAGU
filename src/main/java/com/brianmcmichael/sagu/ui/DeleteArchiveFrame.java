@@ -12,23 +12,33 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
 import com.amazonaws.services.glacier.model.DeleteArchiveRequest;
-import com.brianmcmichael.sagu.Endpoint;
+import static com.brianmcmichael.sagu.Endpoint.getTitleByIndex;
 
 import javax.swing.*;
 import java.awt.*;
+import static java.awt.BorderLayout.CENTER;
+import static java.awt.BorderLayout.NORTH;
+import static java.awt.BorderLayout.SOUTH;
+import static java.awt.Color.WHITE;
+import static java.awt.Toolkit.getDefaultToolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import static java.lang.System.out;
+import static javax.swing.JOptionPane.ERROR_MESSAGE;
+import static javax.swing.JOptionPane.INFORMATION_MESSAGE;
+import static javax.swing.JOptionPane.showMessageDialog;
 
-public class DeleteArchiveFrame extends JFrame implements ActionListener, WindowListener {
+public final class DeleteArchiveFrame extends JFrame implements ActionListener, WindowListener {
 
 	private static final long serialVersionUID = 1L;
-	private JTextField jtfDeleteField;
-    private JButton jbtDelete, jbtBack;
+	private final JTextField jtfDeleteField;
+    private final JButton jbtDelete;
+    private JButton jbtBack;
 
-    private AmazonGlacierClient deleteClient;
-    private String deleteVault;
+    private final AmazonGlacierClient deleteClient;
+    private final String deleteVault;
 
     //Constructor
     public DeleteArchiveFrame(AmazonGlacierClient client, String vaultName, int region) {
@@ -37,12 +47,12 @@ public class DeleteArchiveFrame extends JFrame implements ActionListener, Window
         int width = 200;
         int height = 170;
 
-        Color wc = Color.WHITE;
+        Color wc = WHITE;
 
         deleteClient = client;
         deleteVault = vaultName;
 
-        JLabel label1 = new JLabel("ArchiveID to Delete from " + Endpoint.getTitleByIndex(region) + ":");
+        JLabel label1 = new JLabel("ArchiveID to Delete from " + getTitleByIndex(region) + ":");
         jtfDeleteField = new JTextField(100);
         jbtDelete = new JButton("Delete");
         jbtBack = new JButton("Back");
@@ -73,9 +83,9 @@ public class DeleteArchiveFrame extends JFrame implements ActionListener, Window
         JPanel p4 = new JPanel();
         p4.setLayout(new BorderLayout());
         p4.setBackground(wc);
-        p4.add(p1, BorderLayout.NORTH);
-        p4.add(p2, BorderLayout.CENTER);
-        p4.add(p3, BorderLayout.SOUTH);
+        p4.add(p1, NORTH);
+        p4.add(p2, CENTER);
+        p4.add(p3, SOUTH);
 
         setContentPane(p4);
 
@@ -95,7 +105,7 @@ public class DeleteArchiveFrame extends JFrame implements ActionListener, Window
         int top, left, x, y;
 
         // Get the screen dimension
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension screenSize = getDefaultToolkit().getScreenSize();
 
         // Determine the location for the top left corner of the frame
         x = (screenSize.width - width) / 2;
@@ -141,7 +151,7 @@ public class DeleteArchiveFrame extends JFrame implements ActionListener, Window
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == jbtDelete) {
             if ((jtfDeleteField.getText().trim().equals(""))) {
-                JOptionPane.showMessageDialog(null, "Enter the Archive ID of the file to be deleted.", "Error", JOptionPane.ERROR_MESSAGE);
+                showMessageDialog(null, "Enter the Archive ID of the file to be deleted.", "Error", ERROR_MESSAGE);
             } else {
 
                 try {
@@ -157,15 +167,15 @@ public class DeleteArchiveFrame extends JFrame implements ActionListener, Window
                             .withVaultName(vaultName)
                             .withArchiveId(sendThis));
 
-                    JOptionPane.showMessageDialog(null, "Deleted archive successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    showMessageDialog(null, "Deleted archive successfully.", "Success", INFORMATION_MESSAGE);
 
                 } catch (AmazonServiceException k) {
-                    JOptionPane.showMessageDialog(null, "The server returned an error. Wait 24 hours after submitting an archive to attempt a delete. Also check that correct location of archive has been set on the previous page.", "Error", JOptionPane.ERROR_MESSAGE);
-                    System.out.println("" + k);
+                    showMessageDialog(null, "The server returned an error. Wait 24 hours after submitting an archive to attempt a delete. Also check that correct location of archive has been set on the previous page.", "Error", ERROR_MESSAGE);
+                    out.println("" + k);
                 } catch (AmazonClientException i) {
-                    JOptionPane.showMessageDialog(null, "Client Error. Check that all fields are correct. Archive not deleted.", "Error", JOptionPane.ERROR_MESSAGE);
-                } catch (Exception j) {
-                    JOptionPane.showMessageDialog(null, "Archive not deleted. Unspecified Error.", "Error", JOptionPane.ERROR_MESSAGE);
+                    showMessageDialog(null, "Client Error. Check that all fields are correct. Archive not deleted.", "Error", ERROR_MESSAGE);
+                } catch (HeadlessException j) {
+                    showMessageDialog(null, "Archive not deleted. Unspecified Error.", "Error", ERROR_MESSAGE);
                 }
 
                 jtfDeleteField.setText("");
@@ -176,7 +186,7 @@ public class DeleteArchiveFrame extends JFrame implements ActionListener, Window
             this.setVisible(false);
             dispose();
         } else {
-            JOptionPane.showMessageDialog(this, "Please choose a valid action.");
+            showMessageDialog(this, "Please choose a valid action.");
         }
 
     }

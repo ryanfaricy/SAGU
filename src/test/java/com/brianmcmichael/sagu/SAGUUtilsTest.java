@@ -8,6 +8,10 @@
 
 package com.brianmcmichael.sagu;
 
+import static com.brianmcmichael.sagu.SAGUUtils.concatFileArrays;
+import static com.brianmcmichael.sagu.SAGUUtils.loadVersionNumber;
+import static com.brianmcmichael.sagu.SAGUUtils.pathToDescription;
+import static com.brianmcmichael.sagu.SAGUUtils.removeNullFiles;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -19,20 +23,20 @@ public class SAGUUtilsTest {
 
     @Test
     public void loadVersionNumberShouldReturnVersionString() throws Exception {
-        final String version = SAGUUtils.loadVersionNumber();
+        final String version = loadVersionNumber();
         assertThat(version, is(notNullValue()));
         assertThat(version.matches("\\d+\\.\\d+\\.\\d+(-SNAPSHOT)?"), is(true));
     }
 
     @Test
     public void pathToDescriptionShouldReplaceInvalidChars() throws Exception {
-        assertThat(SAGUUtils.pathToDescription("/Dir/File With Spaces.test"), is("DirFileWithSpaces.test"));
+        assertThat(pathToDescription("/Dir/File With Spaces.test"), is("DirFileWithSpaces.test"));
     }
 
     @Test
     public void shouldRemoveNullFiles() throws Exception {
         final File file = new File("");
-        final File[] result = SAGUUtils.removeNullFiles(new File[]{null, file, null});
+        final File[] result = removeNullFiles(new File[]{null, file, null});
 
         assertThat(result.length, is(1));
         assertThat(result[0], is(file));
@@ -42,7 +46,7 @@ public class SAGUUtilsTest {
     public void shouldConcatFileArrays() throws Exception {
         final File file1 = new File("");
         final File file2 = new File("");
-        final File[] result = SAGUUtils.concatFileArrays(new File[]{file1}, new File[]{file2});
+        final File[] result = concatFileArrays(new File[]{file1}, new File[]{file2});
 
         assertThat(result.length, is(2));
         assertThat(result, is(new File[]{file1, file2}));

@@ -16,30 +16,48 @@ import com.amazonaws.services.glacier.transfer.ArchiveTransferManager;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.brianmcmichael.sagu.Endpoint;
+import static com.brianmcmichael.sagu.Endpoint.getByIndex;
+import static com.brianmcmichael.sagu.Endpoint.getTitleByIndex;
 
 import javax.swing.*;
 import java.awt.*;
+import static java.awt.BorderLayout.NORTH;
+import static java.awt.BorderLayout.SOUTH;
+import static java.awt.Color.WHITE;
+import static java.awt.FileDialog.SAVE;
+import static java.awt.Label.CENTER;
+import static java.awt.Toolkit.getDefaultToolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
+import static java.lang.System.getProperty;
+import static java.lang.System.out;
+import static java.lang.Thread.sleep;
+import static javax.swing.JFileChooser.FILES_ONLY;
+import static javax.swing.JOptionPane.ERROR_MESSAGE;
+import static javax.swing.JOptionPane.INFORMATION_MESSAGE;
+import static javax.swing.JOptionPane.showMessageDialog;
+import static javax.swing.SwingConstants.HORIZONTAL;
+import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
 
-public class AmazonDownloadRequest extends JFrame implements ActionListener, WindowListener {
+public final class AmazonDownloadRequest extends JFrame implements ActionListener, WindowListener {
 
 	private static final long serialVersionUID = 1L;
 
 	public static final String DOWNLOAD_NOTICE = "<html><body><br>Amazon stores your data as a stream of data by archive ID.<br>This information can be found in your log file.<br><br>>> Ensure that Amazon SQS and SNS messaging services are enabled in your AWS console.<br><br>>> Verify that the server and vault on the previous page match the archive<br> you are attmpting to retrieve and enter the archive ID.<br>>> You will then be prompted to select the file name and the location where <br>you would like to save the data.<br>>> Once you click the 'retrieve' button it will take approximately 4 hours <br>for Amazon to process your request.<br>>> Once your files have been prepared your download will begin automatically.<br>>> You will be notified when your download has completed successfully.<br><br> WARNING: <br>Closing the program during a retrieval request will cancel your download.</body><html>";
 
-    private JTextField jtfDownloadField;
-    private JButton jbtDownload, jbtBack;
+    private final JTextField jtfDownloadField;
+    private final JButton jbtDownload;
+    private JButton jbtBack;
 
-    private AmazonGlacierClient dlClient;
-    private BasicAWSCredentials dlCredentials;
-    private int locationChoice;
-    private String dlVault;
+    private final AmazonGlacierClient dlClient;
+    private final BasicAWSCredentials dlCredentials;
+    private final int locationChoice;
+    private final String dlVault;
 
-    private JFileChooser fc = new JFileChooser();
+    private final JFileChooser fc = new JFileChooser();
 
     private String archiveId;
 
@@ -51,7 +69,7 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
         int width = 200;
         int height = 170;
 
-        Color wc = Color.WHITE;
+        Color wc = WHITE;
 
         dlClient = client;
         dlVault = vaultName;
@@ -60,13 +78,13 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
 
         JLabel label1 = new JLabel("ArchiveID to Download from " + dlVault
                 + " in server region "
-                + Endpoint.getTitleByIndex(region) + ":");
+                + getTitleByIndex(region) + ":");
         jtfDownloadField = new JTextField(100);
         JLabel label2 = new JLabel(DOWNLOAD_NOTICE);
         jbtDownload = new JButton("Request Download");
         jbtBack = new JButton("Back");
 
-        fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fc.setFileSelectionMode(FILES_ONLY);
         fc.setDialogTitle("Save File As");
 
         JPanel p1 = new JPanel();
@@ -76,11 +94,11 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
 
         JPanel p2 = new JPanel();
         p2.setLayout(new BorderLayout());
-        p2.add(jtfDownloadField, BorderLayout.NORTH);
+        p2.add(jtfDownloadField, NORTH);
         jtfDownloadField.addMouseListener(new ContextMenuMouseListener());
         jtfDownloadField.setFocusable(true);
-        p2.add(label2, BorderLayout.CENTER);
-        label2.setHorizontalAlignment(JLabel.CENTER);
+        p2.add(label2, CENTER);
+        label2.setHorizontalAlignment(CENTER);
         p2.setBackground(wc);
 
         JPanel p3 = new JPanel();
@@ -96,9 +114,9 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
         JPanel p4 = new JPanel();
         p4.setBackground(wc);
         p4.setLayout(new BorderLayout());
-        p4.add(p1, BorderLayout.NORTH);
-        p4.add(p2, BorderLayout.CENTER);
-        p4.add(p3, BorderLayout.SOUTH);
+        p4.add(p1, NORTH);
+        p4.add(p2, CENTER);
+        p4.add(p3, SOUTH);
 
         setContentPane(p4);
 
@@ -121,7 +139,7 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
         int top, left, x, y;
 
         // Get the screen dimension
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension screenSize = getDefaultToolkit().getScreenSize();
 
         // Determine the location for the top left corner of the frame
         x = (screenSize.width - width) / 2;
@@ -131,7 +149,7 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
 
         this.setBounds(left, top, width, height);
     }
-
+    
     @Override
     public void windowActivated(WindowEvent arg0) {
     }
@@ -168,13 +186,13 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
         if (e.getSource() == jbtDownload) {
             archiveId = jtfDownloadField.getText().trim();
             if ((archiveId.equals(""))) {
-                JOptionPane.showMessageDialog(null,
+                showMessageDialog(null,
                         "Enter the Archive ID of the file to be requested.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                        "Error", ERROR_MESSAGE);
             } else {
                 SwingWorker<Object, Void> downloadWorker = new SwingWorker<Object, Void>() {
 
-                    private String archiveId = jtfDownloadField.getText().trim();
+                    private final String archiveId = jtfDownloadField.getText().trim();
 
                     @Override
                     protected Void doInBackground() throws Exception {
@@ -183,12 +201,11 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
                         JFrame downloadFrame = new JFrame("Downloading");
                         {
                             downloadFrame
-                                    .setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                                    .setDefaultCloseOperation(DISPOSE_ON_CLOSE);
                             final JProgressBar dumJProgressBar = new JProgressBar(
-                                    JProgressBar.HORIZONTAL);
+                                    HORIZONTAL);
                             dumJProgressBar.setIndeterminate(true);
-                            downloadFrame.add(dumJProgressBar,
-                                    BorderLayout.NORTH);
+                            downloadFrame.add(dumJProgressBar, NORTH);
                             downloadFrame.setSize(300, 60);
                         }
                         centerDefineFrame(downloadFrame, 300, 50);
@@ -197,14 +214,14 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
                             String vaultName = dlVault;
 
                             FileDialog fd = new FileDialog(new Frame(),
-                                    "Save Archive As...", FileDialog.SAVE);
+                                    "Save Archive As...", SAVE);
                             fd.setFile("Save Archive As...");
-                            fd.setDirectory(System.getProperty("user.dir"));
+                            fd.setDirectory(getProperty("user.dir"));
                             fd.setLocation(50, 50);
                             fd.setVisible(true);
 
                             String filePath = "" + fd.getDirectory()
-                                    + System.getProperty("file.separator")
+                                    + getProperty("file.separator")
                                     + fd.getFile();
 
                             File outFile = new File(filePath);
@@ -214,7 +231,7 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
                                         + outFile.toString());
                                 downloadFrame.setVisible(true);
 
-                                final Endpoint endpoint = Endpoint.getByIndex(locationChoice);
+                                final Endpoint endpoint = getByIndex(locationChoice);
 
                                 AmazonSQSClient dlSQS = new AmazonSQSClient(dlCredentials);
                                 AmazonSNSClient dlSNS = new AmazonSNSClient(dlCredentials);
@@ -230,33 +247,27 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
 
                                 atm.download("-", vaultName, archiveId, outFile);
 
-                                JOptionPane.showMessageDialog(
-                                        null,
+                                showMessageDialog(null,
                                         "Sucessfully downloaded "
                                                 + outFile.toString(),
-                                        "Success",
-                                        JOptionPane.INFORMATION_MESSAGE);
+                                        "Success", INFORMATION_MESSAGE);
                                 downloadFrame.setVisible(false);
                             }
                         } catch (AmazonServiceException k) {
-                            JOptionPane
-                                    .showMessageDialog(
-                                            null,
+                            showMessageDialog(null,
                                             "The server returned an error. Wait 24 hours after submitting an archive to attempt a download. Also check that correct location of archive has been set on the previous page.",
-                                            "Error", JOptionPane.ERROR_MESSAGE);
-                            System.out.println("" + k);
+                                            "Error", ERROR_MESSAGE);
+                            out.println("" + k);
                             downloadFrame.setVisible(false);
                         } catch (AmazonClientException i) {
-                            JOptionPane
-                                    .showMessageDialog(
-                                            null,
+                            showMessageDialog(null,
                                             "Client Error. Check that all fields are correct. Archive not downloaded.",
-                                            "Error", JOptionPane.ERROR_MESSAGE);
+                                            "Error", ERROR_MESSAGE);
                             downloadFrame.setVisible(false);
                         } catch (Exception j) {
-                            JOptionPane.showMessageDialog(null,
+                            showMessageDialog(null,
                                     "Archive not found. Unspecified Error.",
-                                    "Error", JOptionPane.ERROR_MESSAGE);
+                                    "Error", ERROR_MESSAGE);
                             downloadFrame.setVisible(false);
                         }
                         return null;
@@ -264,7 +275,7 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
                 };
                 downloadWorker.execute();
                 try {
-                    Thread.sleep(500);
+                    sleep(500);
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
@@ -277,15 +288,14 @@ public class AmazonDownloadRequest extends JFrame implements ActionListener, Win
             this.setVisible(false);
             dispose();
         } else {
-            JOptionPane
-                    .showMessageDialog(this, "Please choose a valid action.");
+            showMessageDialog(this, "Please choose a valid action.");
         }
 
     }
 
     void centerDefineFrame(JFrame f, int width, int height) {
 
-        Toolkit tk = Toolkit.getDefaultToolkit();
+        Toolkit tk = getDefaultToolkit();
 
         // Get the screen dimensions.
         Dimension screen = tk.getScreenSize();

@@ -11,7 +11,8 @@ package com.brianmcmichael.sagu;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import static java.lang.System.arraycopy;
+import static java.util.Arrays.asList;
 import java.util.Properties;
 
 /**
@@ -52,7 +53,7 @@ public class SAGUUtils {
      * @return array with files from input array but without null elements
      */
     static File[] removeNullFiles(final File[] input) {
-        return Arrays.asList(input).stream().filter(file -> file != null).toArray(File[]::new);
+        return asList(input).stream().filter(file -> file != null).toArray(File[]::new);
     }
 
     /**
@@ -62,8 +63,8 @@ public class SAGUUtils {
      */
     static File[] concatFileArrays(final File[] first, final File[] second) {
         File[] result = new File[first.length + second.length];
-        System.arraycopy(first, 0, result, 0, first.length);
-        System.arraycopy(second, 0, result, first.length, second.length);
+        arraycopy(first, 0, result, 0, first.length);
+        arraycopy(second, 0, result, first.length, second.length);
         return result;
     }
 }

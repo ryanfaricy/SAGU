@@ -19,7 +19,9 @@ import static com.brianmcmichael.sagu.Endpoint.EU_WEST_IRELAND;
 import static com.brianmcmichael.sagu.Endpoint.US_EAST_NVIRGINIA;
 import static com.brianmcmichael.sagu.Endpoint.US_WEST_NCALIFORNIA;
 import static com.brianmcmichael.sagu.Endpoint.US_WEST_OREGON;
+import static com.brianmcmichael.sagu.Endpoint.getByIndex;
 import static com.brianmcmichael.sagu.Endpoint.getTitleByIndex;
+import static com.brianmcmichael.sagu.Endpoint.populateComboBox;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -27,13 +29,13 @@ public class EndpointTest {
 
     @Test
     public void shouldReturnCorrectInstanceByIndex() throws Exception {
-        assertThat(Endpoint.getByIndex(0), is(US_EAST_NVIRGINIA));
-        assertThat(Endpoint.getByIndex(1), is(US_WEST_OREGON));
-        assertThat(Endpoint.getByIndex(2), is(US_WEST_NCALIFORNIA));
-        assertThat(Endpoint.getByIndex(3), is(EU_WEST_IRELAND));
-        assertThat(Endpoint.getByIndex(4), is(AP_NORTHEAST_TOKYO));
-        assertThat(Endpoint.getByIndex(5), is(AP_SOUTHEAST_SYDNEY));
-        assertThat(Endpoint.getByIndex(6), is(EU_CENTRAL_FRANKFURT));
+        assertThat(getByIndex(0), is(US_EAST_NVIRGINIA));
+        assertThat(getByIndex(1), is(US_WEST_OREGON));
+        assertThat(getByIndex(2), is(US_WEST_NCALIFORNIA));
+        assertThat(getByIndex(3), is(EU_WEST_IRELAND));
+        assertThat(getByIndex(4), is(AP_NORTHEAST_TOKYO));
+        assertThat(getByIndex(5), is(AP_SOUTHEAST_SYDNEY));
+        assertThat(getByIndex(6), is(EU_CENTRAL_FRANKFURT));
     }
 
     @Test
@@ -49,10 +51,10 @@ public class EndpointTest {
 
     @Test
     public void shouldPopulateComboBoxWithValuesInCorrectOrder() throws Exception {
-        final JComboBox<String> comboBox = new JComboBox<String>();
+        final JComboBox<String> comboBox = new JComboBox<>();
         assertThat(comboBox.getItemCount(), is(0));
 
-        Endpoint.populateComboBox(comboBox);
+        populateComboBox(comboBox);
         assertThat(comboBox.getItemCount(), is(7));
         assertThat(comboBox.getItemAt(0), is("US East (Northern Virginia)"));
         assertThat(comboBox.getItemAt(1), is("US West (Oregon)"));

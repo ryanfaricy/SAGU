@@ -13,11 +13,16 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Properties;
 
 import static com.amazonaws.util.StringUtils.isNullOrEmpty;
+import static java.lang.Integer.parseInt;
+import static java.lang.String.valueOf;
+import static java.lang.System.getProperty;
+import static java.nio.file.Files.createDirectory;
+import static java.nio.file.Files.exists;
+import java.nio.file.Path;
+import static java.nio.file.Paths.get;
 
 /**
  * Application properties holder.
@@ -27,8 +32,8 @@ public class AppProperties {
 
     private static final String PROPERTIES_FILE_NAME = "SAGU.properties";
     private static final String SAGU_DIR = ".sagu";
-    private static final String SEPARATOR = System.getProperty("file.separator");
-    private static final String SAGU_HOME_DIR = System.getProperty("user.home") + SEPARATOR + SAGU_DIR;
+    private static final String SEPARATOR = getProperty("file.separator");
+    private static final Path SAGU_HOME_DIR = get(getProperty("user.home") + SEPARATOR + SAGU_DIR);
     private static final String ACCESS_KEY = "accessKey";
     private static final String SECRET_KEY = "secretKey";
     private static final String VAULT_KEY = "vaultKey";
@@ -36,23 +41,23 @@ public class AppProperties {
     private static final String LOG_TYPE_INDEX = "logType";
 
     private final Properties properties = new Properties();
-    private final String dir;
+    private final Path dir;
 
     /**
      * Loads properties from working dir if the file is present there. If not, creates '.sagu' dir in home dir and
      * loads/stores properties there.
      */
     public AppProperties() {
-        this(System.getProperty("user.dir"), SAGU_HOME_DIR);
+        this(get(getProperty("user.dir")), SAGU_HOME_DIR);
     }
 
-    AppProperties(final String workingDir, final String saguHomeDir) {
-        if (Files.exists(Paths.get(workingDir, PROPERTIES_FILE_NAME))) {
+    AppProperties(final Path workingDir, final Path saguHomeDir) {
+        if (exists(get(workingDir.toString(), PROPERTIES_FILE_NAME))) {
             dir = workingDir;
         } else {
-            if (!Files.exists(Paths.get(saguHomeDir))) {
+            if (!exists(saguHomeDir)) {
                 try {
-                    Files.createDirectory(Paths.get(saguHomeDir));
+                    createDirectory(saguHomeDir);
                 } catch (IOException e) {
                     throw new RuntimeException("Cannot create directory '%s' for properties and logs.", e);
                 }
@@ -67,16 +72,16 @@ public class AppProperties {
      *
      * @param dir directory (path string) to load properties from
      */
-    public AppProperties(final String dir) {
+    public AppProperties(final Path dir) {
         this.dir = dir;
         loadProperties();
     }
 
     private void loadProperties() {
         try {
-            final FileInputStream in = new FileInputStream(getFilePropertiesPath());
-            properties.load(in);
-            in.close();
+            try (FileInputStream in = new FileInputStream(getFilePropertiesPath())) {
+                properties.load(in);
+            }
         } catch (FileNotFoundException e1) {
         } catch (IOException e1) {
         }
@@ -86,11 +91,8 @@ public class AppProperties {
      * Saves properties to file
      */
     public void saveProperties() {
-        FileOutputStream out;
-        try {
-            out = new FileOutputStream(getFilePropertiesPath());
+        try (FileOutputStream out = new FileOutputStream(getFilePropertiesPath())) {
             properties.store(out, "Properties");
-            out.close();
         } catch (FileNotFoundException e1) {
         } catch (IOException e1) {
         }
@@ -103,7 +105,7 @@ public class AppProperties {
         if (properties.getProperty(LOG_TYPE_INDEX) == null) {
             return 0;
         } else {
-            return Integer.parseInt(properties.getProperty(LOG_TYPE_INDEX));
+            return parseInt(properties.getProperty(LOG_TYPE_INDEX));
         }
     }
 
@@ -114,7 +116,7 @@ public class AppProperties {
         if (properties.getProperty(LOCATION_INDEX) == null) {
             return 0;
         } else {
-            return Integer.parseInt(properties.getProperty(LOCATION_INDEX));
+            return parseInt(properties.getProperty(LOCATION_INDEX));
         }
     }
 
@@ -156,7 +158,7 @@ public class AppProperties {
         if (secretKey == null) {
             sanitized = new char[0];
         }
-        return setProperty(getSecretKey(), String.valueOf(sanitized), SECRET_KEY);
+        return setProperty(getSecretKey(), valueOf(sanitized), SECRET_KEY);
     }
 
     /**
@@ -188,7 +190,7 @@ public class AppProperties {
         return new File(dir + SEPARATOR + PROPERTIES_FILE_NAME);
     }
 
-    String getDir() {
+    Path getDir() {
         return dir;
     }
 

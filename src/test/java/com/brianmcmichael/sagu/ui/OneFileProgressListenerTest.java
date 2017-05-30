@@ -13,7 +13,6 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.testng.Assert.*;
 
 public class OneFileProgressListenerTest {
 

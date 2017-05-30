@@ -12,10 +12,15 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
 import com.amazonaws.services.glacier.model.*;
-import com.brianmcmichael.sagu.Endpoint;
+import static com.brianmcmichael.sagu.Endpoint.getTitleByIndex;
 
 import javax.swing.*;
 import java.awt.*;
+import static java.awt.BorderLayout.NORTH;
+import static java.awt.BorderLayout.SOUTH;
+import static java.awt.Color.WHITE;
+import static java.awt.Label.CENTER;
+import static java.awt.Toolkit.getDefaultToolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
@@ -23,30 +28,42 @@ import java.awt.event.WindowListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import static java.lang.System.getProperty;
+import static java.lang.System.out;
+import static java.lang.Thread.sleep;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import static java.util.Calendar.MINUTE;
+import static java.util.Calendar.getInstance;
 import java.util.Date;
+import static javax.swing.JOptionPane.ERROR_MESSAGE;
+import static javax.swing.JOptionPane.INFORMATION_MESSAGE;
+import static javax.swing.JOptionPane.showMessageDialog;
+import static javax.swing.SwingConstants.HORIZONTAL;
+import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
 
-public class InventoryRequest extends JFrame implements ActionListener, WindowListener {
+public final class InventoryRequest extends JFrame implements ActionListener, WindowListener {
 
 	private static final long serialVersionUID = 1L;
 	public static final String DOWNLOAD_NOTICE = "<html><body><br>Your data is stored on Glacier Servers by ArchiveID.<br>This function requests a list of Glacier ArchiveID's within a particular vault.<br><br>>> Verify that the server and vault on the previous page match the vault<br> you are attmpting to obtain the inventory from.<br>>> Once you click the 'retrieve' button it will take approximately 4 hours <br>for Amazon to process your request.<br>>> Once your files have been prepared your download will begin automatically.<br>>> You will be notified when your inventory had been retrieved successfully.<br><br> WARNING: <br>Closing the program during a retrieval request will cancel your download.</body><html>";
-    public static final String CUR_DIR = System.getProperty("user.dir");
+    public static final String CUR_DIR = getProperty("user.dir");
 
-    private AmazonGlacierClient irClient;
-    private String irVault;
-    private int irRegion;
-    private JButton jbtInventoryRequest, jbtBack;
+    final AmazonGlacierClient irClient;
+    private final String irVault;
+    private final int irRegion;
+    private final JButton jbtInventoryRequest;
+    private JButton jbtBack;
 
     //Wait between status requests.
-    private long WAIT_TIME = 600000L;
+    private final long WAIT_TIME = 600000L;
 
     private int width = 200;
     private int height = 170;
 
-    private Color wc = Color.WHITE;
+    private final Color wc = WHITE;
 
     public InventoryRequest(AmazonGlacierClient thisClient, String thisVault, int thisRegion) {
         super("Request Inventory");
@@ -56,7 +73,7 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
         this.irRegion = thisRegion;
 
         JLabel label1 = new JLabel("Request Archive Inventory from " + irVault + " in server region " +
-                Endpoint.getTitleByIndex(irRegion) + ":");
+                getTitleByIndex(irRegion) + ":");
         JLabel label2 = new JLabel(DOWNLOAD_NOTICE);
         jbtInventoryRequest = new JButton("Request Inventory");
         jbtBack = new JButton("Back");
@@ -69,8 +86,8 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
 
         JPanel p2 = new JPanel();
         p2.setLayout(new BorderLayout());
-        p2.add(label2, BorderLayout.CENTER);
-        label2.setHorizontalAlignment(JLabel.CENTER);
+        p2.add(label2, CENTER);
+        label2.setHorizontalAlignment(CENTER);
         p2.setBackground(wc);
 
         JPanel p3 = new JPanel();
@@ -85,9 +102,9 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
 
         JPanel p4 = new JPanel();
         p4.setLayout(new BorderLayout());
-        p4.add(p1, BorderLayout.NORTH);
-        p4.add(p2, BorderLayout.CENTER);
-        p4.add(p3, BorderLayout.SOUTH);
+        p4.add(p1, NORTH);
+        p4.add(p2, CENTER);
+        p4.add(p3, SOUTH);
 
         setContentPane(p4);
 
@@ -109,7 +126,7 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
         int top, left, x, y;
 
         // Get the screen dimension
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension screenSize = getDefaultToolkit().getScreenSize();
 
         // Determine the location for the top left corner of the frame
         x = (screenSize.width - width) / 2;
@@ -119,7 +136,6 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
 
         this.setBounds(left, top, width, height);
     }
-
 
     @Override
     public void windowActivated(WindowEvent arg0) {
@@ -163,16 +179,16 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
                     Date d = new Date();
                     JFrame inventoryFrame = new JFrame("Waiting for inventory");
                     {
-                        inventoryFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                        Calendar cal = Calendar.getInstance();
+                        inventoryFrame.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+                        Calendar cal = getInstance();
                         cal.setTime(d);
-                        cal.add(Calendar.MINUTE, 250);
+                        cal.add(MINUTE, 250);
                         String doneString = cal.getTime().toString();
                         JLabel doneTimeLabel = new JLabel("<html><body>Inventory of vault " + irVault + " requested.<br>Estimated completion by " + doneString + "</html></body>");
-                        final JProgressBar dumJProgressBar = new JProgressBar(JProgressBar.HORIZONTAL);
+                        final JProgressBar dumJProgressBar = new JProgressBar(HORIZONTAL);
                         dumJProgressBar.setIndeterminate(true);
-                        inventoryFrame.add(dumJProgressBar, BorderLayout.NORTH);
-                        inventoryFrame.add(doneTimeLabel, BorderLayout.CENTER);
+                        inventoryFrame.add(dumJProgressBar, NORTH);
+                        inventoryFrame.add(doneTimeLabel, CENTER);
                         inventoryFrame.setBackground(wc);
                         inventoryFrame.setSize(300, 60);
                     }
@@ -190,12 +206,12 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
                         InitiateJobResult initJobResult = irClient.initiateJob(initJobRequest);
                         String thisJobId = initJobResult.getJobId();
 
-                        Thread.sleep(12600000);
+                        sleep(12600000);
 
                         Boolean success = waitForJob(irClient, irVault, thisJobId);
 
                         while (!success) {
-                            Thread.sleep(WAIT_TIME);
+                            sleep(WAIT_TIME);
                             success = waitForJob(irClient, irVault, thisJobId);
                         }
 
@@ -209,37 +225,36 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
 
                         String fileName = irVault + fileDate + ".txt";
 
-                        String filePath = "" + CUR_DIR + System.getProperty("file.separator") + fileName;
+                        String filePath = "" + CUR_DIR + getProperty("file.separator") + fileName;
 
                         FileWriter fileStream = new FileWriter(filePath);
 
-                        BufferedWriter out = new BufferedWriter(fileStream);
-
-                        BufferedReader in = new BufferedReader(new InputStreamReader(gjoResult.getBody()));
-
-                        String inputLine;
-
-                        while ((inputLine = in.readLine()) != null) {
-                            out.write(inputLine);
+                        try (BufferedWriter out = new BufferedWriter(fileStream)) {
+                            BufferedReader in = new BufferedReader(new InputStreamReader(gjoResult.getBody()));
+                            
+                            String inputLine;
+                            
+                            while ((inputLine = in.readLine()) != null) {
+                                out.write(inputLine);
+                            }
                         }
-                        out.close();
 
                         inventoryFrame.setVisible(false);
 
-                        JOptionPane.showMessageDialog(null, "Successfully exported " + irVault + " inventory to " + filePath.toString(), "Saved", JOptionPane.INFORMATION_MESSAGE);
+                        showMessageDialog(null, "Successfully exported " + irVault + " inventory to " + filePath, "Saved", INFORMATION_MESSAGE);
 
                         return null;
 
 
                     } catch (AmazonServiceException k) {
-                        JOptionPane.showMessageDialog(null, "The server returned an error. Files will not be inventoried for 24 hours after upload. Also check that correct location of vault has been set on the previous page.", "Error", JOptionPane.ERROR_MESSAGE);
-                        System.out.println("" + k);
+                        showMessageDialog(null, "The server returned an error. Files will not be inventoried for 24 hours after upload. Also check that correct location of vault has been set on the previous page.", "Error", ERROR_MESSAGE);
+                        out.println("" + k);
                         inventoryFrame.setVisible(false);
                     } catch (AmazonClientException i) {
-                        JOptionPane.showMessageDialog(null, "Client Error. Check that all fields are correct. Inventory not requested.", "Error", JOptionPane.ERROR_MESSAGE);
+                        showMessageDialog(null, "Client Error. Check that all fields are correct. Inventory not requested.", "Error", ERROR_MESSAGE);
                         inventoryFrame.setVisible(false);
-                    } catch (Exception j) {
-                        JOptionPane.showMessageDialog(null, "Inventory not found. Unspecified Error.", "Error", JOptionPane.ERROR_MESSAGE);
+                    } catch (HeadlessException | IOException | InterruptedException j) {
+                        showMessageDialog(null, "Inventory not found. Unspecified Error.", "Error", ERROR_MESSAGE);
                         inventoryFrame.setVisible(false);
                     }
                     return null;
@@ -249,7 +264,7 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
             };
             inventoryWorker.execute();
             try {
-                Thread.sleep(500);
+                sleep(500);
             } catch (InterruptedException e1) {
                 e1.printStackTrace();
             }
@@ -260,7 +275,7 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
             this.setVisible(false);
             dispose();
         } else {
-            JOptionPane.showMessageDialog(this, "Please choose a valid action.");
+            showMessageDialog(this, "Please choose a valid action.");
         }
 
     }
@@ -279,7 +294,7 @@ public class InventoryRequest extends JFrame implements ActionListener, WindowLi
 
     void centerDefineFrame(JFrame f, int width, int height) {
 
-        Toolkit tk = Toolkit.getDefaultToolkit();
+        Toolkit tk = getDefaultToolkit();
 
         // Get the screen dimensions.
         Dimension screen = tk.getScreenSize();

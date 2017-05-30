@@ -10,6 +10,9 @@ package com.brianmcmichael.sagu.ui;
 
 import javax.swing.*;
 import java.awt.*;
+import static java.awt.GridBagConstraints.BOTH;
+import static java.awt.GridBagConstraints.HORIZONTAL;
+import static javax.swing.SwingUtilities.invokeLater;
 
 /**
  * Dialog window for upload progress displaying.
@@ -26,7 +29,7 @@ public class UploadWindow extends JFrame {
      * Initializes and displays the Upload Window.
      */
     public UploadWindow() {
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setSize(500, 400);
         setLocationRelativeTo(null);
 
@@ -50,7 +53,7 @@ public class UploadWindow extends JFrame {
      * @param percentage progress percentage to be displayed
      */
     public void updateAllFilesProgress(final int percentage) {
-        SwingUtilities.invokeLater(() -> allFilesProgressBar.setValue(percentage));
+        invokeLater(() -> allFilesProgressBar.setValue(percentage));
     }
 
     /**
@@ -59,7 +62,7 @@ public class UploadWindow extends JFrame {
      * @param percentage progress percentage to be displayed
      */
     public void updateOneFileProgress(final int percentage) {
-        SwingUtilities.invokeLater(() -> oneFileProgressBar.setValue(percentage));
+        invokeLater(() -> oneFileProgressBar.setValue(percentage));
     }
 
     private void initUI() {
@@ -68,7 +71,7 @@ public class UploadWindow extends JFrame {
 
         final GridBagConstraints constraints = new GridBagConstraints();
         constraints.weightx = 1;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.fill = HORIZONTAL;
         constraints.gridx = 0;
         constraints.gridy = 0;
         constraints.insets = new Insets(5, 5, 5, 5);
@@ -108,7 +111,7 @@ public class UploadWindow extends JFrame {
         constraints.insets = new Insets(5, 5, 5, 5);
         constraints.weightx = 1;
         constraints.weighty = 1;
-        constraints.fill = GridBagConstraints.BOTH;
+        constraints.fill = BOTH;
         constraints.gridx = 0;
         constraints.gridy = 4;
         constraints.gridwidth = 2;

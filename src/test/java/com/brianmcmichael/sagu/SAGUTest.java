@@ -8,9 +8,14 @@
 
 package com.brianmcmichael.sagu;
 
+import static com.brianmcmichael.sagu.SAGU.main;
+import static com.brianmcmichael.sagu.SAGU.sagu;
+import static java.lang.System.getProperty;
 import org.testng.annotations.Test;
 
-import java.nio.file.Files;
+import static java.nio.file.Files.createTempDirectory;
+import java.nio.file.Path;
+import static java.nio.file.Paths.get;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -19,37 +24,37 @@ public class SAGUTest {
 
     @Test
     public void shouldUseWorkingDirForPropertiesAsDefault() throws Exception {
-        String saguHomeDir = System.getProperty("user.home") + System.getProperty("file.separator") + ".sagu";
-        SAGU.main(null);
-        assertThat(SAGU.sagu.getAppProperties().getDir(), is(saguHomeDir));
+        Path saguHomeDir = get(getProperty("user.home"), getProperty("file.separator"), ".sagu");
+        main(null);
+        assertThat(sagu.getAppProperties().getDir(), is(saguHomeDir));
     }
 
     @Test
     public void shouldUseDirFromParamWhenPassed() throws Exception {
-        final String tempDir = Files.createTempDirectory("sagu").toString();
-        SAGU.main(new String[]{"--properties-dir", tempDir});
-        assertThat(SAGU.sagu.getAppProperties().getDir(), is(tempDir));
+        final Path tempDir = createTempDirectory("sagu");
+        main(new String[]{"--properties-dir", tempDir.toString()});
+        assertThat(sagu.getAppProperties().getDir(), is(tempDir));
     }
 
     @Test
     public void getSecretKeyShouldReturnTrimmedString() throws Exception {
-        SAGU.main(null);
-        SAGU.sagu.secretField.setText(" SEC ");
-        assertThat(SAGU.sagu.getSecretKey(), is("SEC"));
+        main(null);
+        sagu.secretField.setText(" SEC ");
+        assertThat(sagu.getSecretKey(), is("SEC"));
     }
 
     @Test
     public void getAccessKeyShouldReturnTrimmedString() throws Exception {
-        SAGU.main(null);
-        SAGU.sagu.accessField.setText(" ACC ");
-        assertThat(SAGU.sagu.getAccessKey(), is("ACC"));
+        main(null);
+        sagu.accessField.setText(" ACC ");
+        assertThat(sagu.getAccessKey(), is("ACC"));
     }
 
     @Test
     public void getVaultNameShouldReturnTrimmedString() throws Exception {
-        SAGU.main(null);
-        SAGU.sagu.vaultField.setText(" VAU ");
-        assertThat(SAGU.sagu.getVaultName(), is("VAU"));
+        main(null);
+        sagu.vaultField.setText(" VAU ");
+        assertThat(sagu.getVaultName(), is("VAU"));
     }
 
 }

@@ -10,21 +10,21 @@ package com.brianmcmichael.sagu.ui;
 
 import javax.swing.*;
 import javax.swing.text.JTextComponent;
-import java.awt.*;
-import java.awt.datatransfer.DataFlavor;
+import static java.awt.Toolkit.getDefaultToolkit;
+import static java.awt.datatransfer.DataFlavor.stringFlavor;
 import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
+import static java.awt.event.InputEvent.BUTTON3_MASK;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 public class ContextMenuMouseListener extends MouseAdapter {
-    private JPopupMenu popup = new JPopupMenu();
+    private final JPopupMenu popup = new JPopupMenu();
 
-    private Action cutAction;
-    private Action copyAction;
-    private Action pasteAction;
-    private Action undoAction;
-    private Action selectAllAction;
+    private final Action cutAction;
+    private final Action copyAction;
+    private final Action pasteAction;
+    private final Action undoAction;
+    private final Action selectAllAction;
 
     private JTextComponent textComponent;
     private String savedString = "";
@@ -44,7 +44,7 @@ public class ContextMenuMouseListener extends MouseAdapter {
                 textComponent.setText("");
                 textComponent.replaceSelection(savedString);
 
-                lastActionSelected = Actions.UNDO;
+                lastActionSelected = com.brianmcmichael.sagu.ui.ContextMenuMouseListener.Actions.UNDO;
             }
         };
 
@@ -57,7 +57,7 @@ public class ContextMenuMouseListener extends MouseAdapter {
 
 			@Override
             public void actionPerformed(ActionEvent ae) {
-                lastActionSelected = Actions.CUT;
+                lastActionSelected = com.brianmcmichael.sagu.ui.ContextMenuMouseListener.Actions.CUT;
                 savedString = textComponent.getText();
                 textComponent.cut();
             }
@@ -71,7 +71,7 @@ public class ContextMenuMouseListener extends MouseAdapter {
 
 			@Override
             public void actionPerformed(ActionEvent ae) {
-                lastActionSelected = Actions.COPY;
+                lastActionSelected = com.brianmcmichael.sagu.ui.ContextMenuMouseListener.Actions.COPY;
                 textComponent.copy();
             }
         };
@@ -84,7 +84,7 @@ public class ContextMenuMouseListener extends MouseAdapter {
 
 			@Override
             public void actionPerformed(ActionEvent ae) {
-                lastActionSelected = Actions.PASTE;
+                lastActionSelected = com.brianmcmichael.sagu.ui.ContextMenuMouseListener.Actions.PASTE;
                 savedString = textComponent.getText();
                 textComponent.paste();
             }
@@ -99,7 +99,7 @@ public class ContextMenuMouseListener extends MouseAdapter {
 
 			@Override
             public void actionPerformed(ActionEvent ae) {
-                lastActionSelected = Actions.SELECT_ALL;
+                lastActionSelected = com.brianmcmichael.sagu.ui.ContextMenuMouseListener.Actions.SELECT_ALL;
                 textComponent.selectAll();
             }
         };
@@ -109,7 +109,7 @@ public class ContextMenuMouseListener extends MouseAdapter {
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        if (e.getModifiers() == InputEvent.BUTTON3_MASK) {
+        if (e.getModifiers() == BUTTON3_MASK) {
             if (!(e.getSource() instanceof JTextComponent)) {
                 return;
             }
@@ -122,9 +122,9 @@ public class ContextMenuMouseListener extends MouseAdapter {
             boolean nonempty = !(textComponent.getText() == null || textComponent.getText().equals(""));
             boolean marked = textComponent.getSelectedText() != null;
 
-            boolean pasteAvailable = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null).isDataFlavorSupported(DataFlavor.stringFlavor);
+            boolean pasteAvailable = getDefaultToolkit().getSystemClipboard().getContents(null).isDataFlavorSupported(stringFlavor);
 
-            undoAction.setEnabled(enabled && editable && (lastActionSelected == Actions.CUT || lastActionSelected == Actions.PASTE));
+            undoAction.setEnabled(enabled && editable && (lastActionSelected == com.brianmcmichael.sagu.ui.ContextMenuMouseListener.Actions.CUT || lastActionSelected == com.brianmcmichael.sagu.ui.ContextMenuMouseListener.Actions.PASTE));
             cutAction.setEnabled(enabled && editable && marked);
             copyAction.setEnabled(enabled && marked);
             pasteAction.setEnabled(enabled && editable && pasteAvailable);

@@ -9,6 +9,7 @@
 package com.brianmcmichael.sagu;
 
 import java.io.*;
+import static java.lang.System.getProperty;
 import java.util.Date;
 
 /**
@@ -49,21 +50,21 @@ public class LogWriter {
      */
     public static File getLogFile(final int logType, final AppProperties properties) {
         if (logType == 0) {
-            return new File(properties.getDir() + System.getProperty("file.separator") + LOG_FILE_NAME_LOG);
+            return new File(properties.getDir() + getProperty("file.separator") + LOG_FILE_NAME_LOG);
         }
         if (logType == 1) {
-            return new File(properties.getDir() + System.getProperty("file.separator") + LOG_FILE_NAME_TXT);
+            return new File(properties.getDir() + getProperty("file.separator") + LOG_FILE_NAME_TXT);
         }
         if (logType == 2) {
-            return new File(properties.getDir() + System.getProperty("file.separator") + LOG_FILE_NAME_CSV);
+            return new File(properties.getDir() + getProperty("file.separator") + LOG_FILE_NAME_CSV);
         }
         if (logType == 3) {
-            return new File(properties.getDir() + System.getProperty("file.separator") + LOG_FILE_NAME_YAML);
+            return new File(properties.getDir() + getProperty("file.separator") + LOG_FILE_NAME_YAML);
         }
         if (logType == 4) {
-            return new File(properties.getDir() + System.getProperty("file.separator") + LOG_FILE_NAME_ERR);
+            return new File(properties.getDir() + getProperty("file.separator") + LOG_FILE_NAME_ERR);
         } else {
-            return new File(properties.getDir() + System.getProperty("file.separator") + LOG_FILE_NAME_LOG);
+            return new File(properties.getDir() + getProperty("file.separator") + LOG_FILE_NAME_LOG);
         }
     }
 
@@ -82,7 +83,7 @@ public class LogWriter {
                                 final String fileLength, final String treeHash,
                                 final String archiveId) throws IOException {
         final Date currentDate = new Date();
-        final String lineSeparator = System.getProperty("line.separator");
+        final String lineSeparator = getProperty("line.separator");
 
         plainOutputLog.write(lineSeparator);
         plainOutputLog.write(" | ArchiveID: " + archiveId + " ");
